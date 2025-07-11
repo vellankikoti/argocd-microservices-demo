@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: recommendationservice-preview
+  namespace: gitops-demo
+  labels:
+    app: recommendationservice
+spec:
+  type: ClusterIP
+  selector:
+    app: recommendationservice
+    rollouts-pod-template-hash: preview
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080 

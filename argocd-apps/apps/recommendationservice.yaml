@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: 'https://github.com/vellankikoti/argocd-microservices-demo.git'
     targetRevision: main
-    path: services/recommendationservice
+    path: overlays/rollouts
     directory:
       recurse: true
   destination:
