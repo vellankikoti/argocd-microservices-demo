@@ -2,10 +2,11 @@
 
 ## 🚀 Introduction
 This scenario demonstrates GitOps best practices using ArgoCD and Argo Rollouts to manage a real microservices demo (Google Online Boutique). You'll learn how to:
-- Install and access ArgoCD
+- Install and access ArgoCD and Argo Rollouts
 - Deploy and manage microservices with GitOps
 - Use overlays for local/cloud/rollouts
-- Demo canary, blue-green, and rolling deployments
+- **Experience interactive deployment strategies with visual feedback**
+- **Demo canary, blue-green, and rolling deployments with real-time monitoring**
 - Use helper scripts for easy management
 - Troubleshoot common issues
 
@@ -25,19 +26,29 @@ This scenario demonstrates GitOps best practices using ArgoCD and Argo Rollouts 
 
 ---
 
-## 2️⃣ Install ArgoCD
+## 2️⃣ Install ArgoCD & Argo Rollouts
 ```bash
+# Install ArgoCD
 kubectl create namespace argocd
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+# Install Argo Rollouts (for advanced deployment strategies)
+kubectl apply -f https://github.com/argoproj/argo-rollouts/releases/latest/download/install.yaml
+kubectl apply -f https://github.com/argoproj/argo-rollouts/releases/latest/download/dashboard-install.yaml
 ```
 
 ---
 
-## 3️⃣ Access ArgoCD UI
-- **Port-forward (local):**
+## 3️⃣ Access Dashboards
+- **ArgoCD UI (Port-forward):**
   ```bash
   kubectl port-forward svc/argocd-server -n argocd 8080:443
   # Visit http://localhost:8080
+  ```
+- **Argo Rollouts UI (Port-forward):**
+  ```bash
+  kubectl port-forward deployment/argo-rollouts-dashboard -n argo-rollouts 3100:3100
+  # Visit http://localhost:3100
   ```
 - **Cloud:** Use LoadBalancer/Ingress URL
 
@@ -77,18 +88,68 @@ kubectl apply -f argocd-apps/app-of-apps.yaml
 
 ---
 
-## 8️⃣ Switch Overlays (Local/Cloud/Rollouts)
-- Use the helper script:
-  ```bash
-  ./scripts/switch-overlay.sh local      # For local NodePort
-  ./scripts/switch-overlay.sh cloud      # For cloud LoadBalancer
-  ./scripts/switch-overlay.sh rollouts   # For advanced rollout strategies
-  ```
-- Sync Applications in ArgoCD UI after switching overlays.
+## 8️⃣ 🎭 **INTERACTIVE DEPLOYMENT STRATEGIES DEMO**
+
+### **Quick Start - Elevated Learning Experience**
+```bash
+# Run the interactive demo with visual feedback
+./scripts/interactive-demo.sh
+```
+
+### **What You'll Experience:**
+
+#### **🎭 Canary Deployment (Frontend)**
+- **Visual Progress**: Watch traffic gradually shift from 25% → 50% → 75% → 100%
+- **Health Monitoring**: Automated checks ensure new version is healthy
+- **Traffic Testing**: Test both stable and canary versions simultaneously
+- **Real-time Feedback**: See deployment progress in Argo Rollouts UI
+
+#### **🔵🔴 Blue-Green Deployment (Recommendationservice)**
+- **Environment Switching**: Watch blue (stable) and green (preview) environments
+- **Zero Downtime**: Traffic switches instantly between environments
+- **Manual Promotion**: Control when to promote the green environment
+- **Automatic Rollback**: Failed deployments automatically rollback
+
+#### **🔄 Rolling Update Demo**
+- **Pod-by-Pod Updates**: See pods update one by one
+- **Health Checks**: Automatic verification of each pod
+- **Zero Downtime**: Application remains accessible throughout
+- **Rollback Capability**: Easy rollback to previous version
+
+#### **📊 Real-time Monitoring**
+- **ArgoCD Dashboard**: Application health and sync status
+- **Argo Rollouts Dashboard**: Deployment progress and traffic visualization
+- **Health Metrics**: Success rates and error monitoring
+- **Traffic Analysis**: See which version is serving traffic
 
 ---
 
-## 9️⃣ Demonstrate Deployment Strategies
+## 9️⃣ Manual Deployment Strategy Demonstrations
+
+### Canary Deployment Strategy
+```bash
+# Deploy with canary strategy
+kubectl apply -f overlays/rollouts/frontend-rollout.yaml
+kubectl apply -f overlays/rollouts/frontend-preview-service.yaml
+
+# Watch progress in Argo Rollouts UI
+# Visit http://localhost:3100
+
+# Test different versions
+curl http://localhost:30081  # Stable version
+curl http://localhost:30082  # Canary version
+```
+
+### Blue-Green Deployment Strategy
+```bash
+# Deploy with blue-green strategy
+kubectl apply -f overlays/rollouts/recommendationservice-rollout.yaml
+kubectl apply -f overlays/rollouts/recommendationservice-preview-service.yaml
+
+# Watch environments in Argo Rollouts UI
+# Promote green to blue when ready
+kubectl argo rollouts promote recommendationservice -n gitops-demo
+```
 
 ### Rolling Update Strategy
 ```bash
@@ -102,29 +163,16 @@ kubectl set image deployment/frontend server=<new-image> -n gitops-demo
 kubectl rollout status deployment/frontend -n gitops-demo
 ```
 
-### Canary Deployment Strategy
-```bash
-# Scale up for canary-like behavior
-kubectl scale deployment frontend --replicas=3 -n gitops-demo
-
-# Check multiple pods running
-kubectl get pods -n gitops-demo | grep frontend
-```
-
-### Blue-Green Deployment Strategy
-- Update image version in Git repository
-- ArgoCD automatically syncs the new version
-- Zero-downtime deployment achieved
-
 ---
 
-## 🔟 Use Argo Rollouts UI (Optional)
-- Install dashboard:
+## 🔟 Switch Overlays (Local/Cloud/Rollouts)
+- Use the helper script:
   ```bash
-  kubectl apply -f https://github.com/argoproj/argo-rollouts/releases/latest/download/install.yaml
-  kubectl -n argo-rollouts port-forward deployment/argo-rollouts-dashboard 3100:3100
-  # Visit http://localhost:3100
+  ./scripts/switch-overlay.sh local      # For local NodePort
+  ./scripts/switch-overlay.sh cloud      # For cloud LoadBalancer
+  ./scripts/switch-overlay.sh rollouts   # For advanced rollout strategies
   ```
+- Sync Applications in ArgoCD UI after switching overlays.
 
 ---
 
@@ -133,6 +181,7 @@ kubectl get pods -n gitops-demo | grep frontend
 - `./scripts/teardown.sh` – Remove all resources
 - `./scripts/switch-overlay.sh` – Switch overlays
 - `./scripts/reset-demo.sh` – Reset demo environment
+- **`./scripts/interactive-demo.sh`** – **Interactive deployment strategies demo**
 
 ---
 
@@ -148,7 +197,7 @@ kubectl get pods -n gitops-demo | grep frontend
 kubectl get applications -n argocd frontend -o jsonpath='{.spec.source.path}'
 
 # Update to correct path if needed
-kubectl patch application frontend -n argocd --type='merge' -p='{"spec":{"source":{"path":"services/frontend"}}}'
+kubectl patch application frontend -n argocd --type='merge' -p='{"spec":{"source":{"path":"overlays/rollouts"}}}'
 
 # Force sync with latest revision
 kubectl patch application frontend -n argocd --type='merge' -p='{"spec":{"source":{"targetRevision":"HEAD"}}}'
@@ -165,12 +214,16 @@ kubectl get services --all-namespaces | grep 30080
 # Change nodePort: 30080 to nodePort: 30081
 ```
 
-#### Issue: Application Manifest Path Issues
-**Problem:** Applications pointing to non-existent overlays
+#### Issue: Argo Rollouts Not Working
+**Problem:** Rollouts not showing in dashboard
 **Solution:**
 ```bash
-# Update Application manifest to point to base services
-kubectl patch application <app-name> -n argocd --type='merge' -p='{"spec":{"source":{"path":"services/<service-name>"}}}'
+# Check if Argo Rollouts is installed
+kubectl get crd rollouts.argoproj.io
+
+# Reinstall if needed
+kubectl apply -f https://github.com/argoproj/argo-rollouts/releases/latest/download/install.yaml
+kubectl apply -f https://github.com/argoproj/argo-rollouts/releases/latest/download/dashboard-install.yaml
 ```
 
 #### Issue: Port Forward Conflicts
@@ -182,7 +235,7 @@ pkill -f "kubectl port-forward"
 
 # Use different ports
 kubectl port-forward svc/argocd-server -n argocd 8081:443
-kubectl port-forward service/frontend-external 8082:80 -n gitops-demo
+kubectl port-forward deployment/argo-rollouts-dashboard -n argo-rollouts 3101:3100
 ```
 
 ### Health Checks
@@ -192,6 +245,9 @@ kubectl get applications -n argocd
 
 # Check microservices pods
 kubectl get pods -n gitops-demo
+
+# Check rollouts
+kubectl get rollouts -n gitops-demo
 
 # Check services
 kubectl get services -n gitops-demo
@@ -204,18 +260,24 @@ kubectl get pods -n argocd
 
 ## 1️⃣3️⃣ Quick Reference Commands
 ```bash
-# Install ArgoCD
+# Install ArgoCD and Argo Rollouts
 kubectl create namespace argocd
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl apply -f https://github.com/argoproj/argo-rollouts/releases/latest/download/install.yaml
+kubectl apply -f https://github.com/argoproj/argo-rollouts/releases/latest/download/dashboard-install.yaml
 
 # Get ArgoCD admin password
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d && echo
 
-# Port-forward ArgoCD UI
-kubectl port-forward svc/argocd-server -n argocd 8080:443
+# Start dashboards
+kubectl port-forward svc/argocd-server -n argocd 8080:443 &
+kubectl port-forward deployment/argo-rollouts-dashboard -n argo-rollouts 3100:3100 &
 
 # Bootstrap app-of-apps
 kubectl apply -f argocd-apps/app-of-apps.yaml
+
+# Run interactive demo
+./scripts/interactive-demo.sh
 
 # Access demo application
 kubectl port-forward service/frontend-external 8080:80 -n gitops-demo
@@ -224,8 +286,8 @@ kubectl port-forward service/frontend-external 8080:80 -n gitops-demo
 ./scripts/switch-overlay.sh local|cloud|rollouts
 
 # Check deployment strategies
-kubectl rollout status deployment/frontend -n gitops-demo
-kubectl get pods -n gitops-demo | grep frontend
+kubectl rollout status rollout/frontend -n gitops-demo
+kubectl get rollouts -n gitops-demo
 
 # Reset demo
 ./scripts/reset-demo.sh
@@ -246,16 +308,17 @@ kubectl get services -n gitops-demo | grep frontend
 # Output: 
 # frontend                ClusterIP   10.96.104.166   <none>        80/TCP
 # frontend-external       NodePort    10.96.33.143    <none>        80:30081/TCP
+# frontend-preview        NodePort    10.96.45.123    <none>        80:30082/TCP
 ```
 
-### ✅ GitOps Structure
+### ✅ Enhanced GitOps Structure
 ```
 05-gitops/
 ├── argocd-apps/
 │   ├── app-of-apps.yaml          # ArgoCD Application of Applications
 │   └── apps/                     # Individual ArgoCD Applications
-│       ├── frontend.yaml         # Points to services/frontend
-│       ├── recommendationservice.yaml
+│       ├── frontend.yaml         # Points to overlays/rollouts
+│       ├── recommendationservice.yaml # Points to overlays/rollouts
 │       └── [other services].yaml
 ├── services/                     # Base manifests (ClusterIP, Deployments)
 │   ├── frontend/
@@ -268,38 +331,72 @@ kubectl get services -n gitops-demo | grep frontend
 │   ├── local/
 │   │   └── frontend/
 │   │       └── service-frontend-external.yaml # NodePort (30081)
-│   └── cloud/
-│       └── frontend/
-│           └── service-frontend-external.yaml # LoadBalancer
-└── scripts/                      # Helper scripts
+│   ├── cloud/
+│   │   └── frontend/
+│   │       └── service-frontend-external.yaml # LoadBalancer
+│   └── rollouts/                 # Advanced deployment strategies
+│       ├── frontend-rollout.yaml # Canary deployment
+│       ├── frontend-preview-service.yaml
+│       ├── recommendationservice-rollout.yaml # Blue-green deployment
+│       ├── recommendationservice-preview-service.yaml
+│       └── analysis-template.yaml # Health checks
+├── scripts/
+│   ├── interactive-demo.sh       # Interactive demo script
+│   ├── setup.sh
+│   ├── teardown.sh
+│   ├── switch-overlay.sh
+│   └── reset-demo.sh
+└── ELEVATED_DEMO_GUIDE.md       # Comprehensive learning guide
 ```
 
 ### ✅ Access Information
 - **ArgoCD UI:** http://localhost:8080 (admin/oSZAKRnoU9uAWbTu)
+- **Argo Rollouts UI:** http://localhost:3100
 - **Demo App:** http://localhost:8080 (via port-forward)
-- **NodePort Access:** http://<node-ip>:30081
+- **Stable Version:** http://localhost:30081
+- **Canary Version:** http://localhost:30082
 
 ---
 
-## 1️⃣5️⃣ Deployment Strategies Demonstrated
-
-### Rolling Update
-- ✅ Frontend using RollingUpdate strategy
-- ✅ Zero-downtime deployments
-- ✅ Automatic rollback capability
+## 1️⃣5️⃣ Advanced Deployment Strategies Demonstrated
 
 ### Canary Deployment
-- ✅ Scaled frontend to multiple replicas
-- ✅ Load balancing across pods
-- ✅ Gradual traffic shifting capability
+- ✅ **Gradual Traffic Shifting**: 25% → 50% → 75% → 100%
+- ✅ **Health Monitoring**: Automated success rate checks
+- ✅ **Traffic Testing**: Test both versions simultaneously
+- ✅ **Visual Progress**: Real-time dashboard monitoring
 
-### Blue-Green Ready
-- ✅ Infrastructure ready for blue-green deployments
-- ✅ Easy version switching via GitOps
+### Blue-Green Deployment
+- ✅ **Environment Switching**: Blue (stable) vs Green (preview)
+- ✅ **Zero Downtime**: Instant traffic switching
+- ✅ **Manual Promotion**: Control when to promote
+- ✅ **Automatic Rollback**: Safety for failed deployments
+
+### Rolling Update
+- ✅ **Pod-by-Pod Updates**: Gradual replacement
+- ✅ **Health Checks**: Automatic verification
+- ✅ **Zero Downtime**: Continuous service availability
+- ✅ **Rollback Capability**: Quick recovery
 
 ---
 
-## 1️⃣6️⃣ Credits & References
+## 1️⃣6️⃣ Educational Value
+
+### **Lifetime Learning Experience**
+- **Visual Learning**: Real-time dashboards and progress indicators
+- **Interactive Demonstrations**: Guided step-by-step explanations
+- **Hands-on Experience**: Direct interaction with deployment tools
+- **Safety Mechanisms**: Learn without breaking production systems
+
+### **Production-Ready Skills**
+- **Advanced Deployment Strategies**: Canary, blue-green, rolling updates
+- **GitOps Workflows**: Declarative infrastructure management
+- **Monitoring Integration**: Health checks and metrics
+- **Automation**: Automated deployment and rollback processes
+
+---
+
+## 1️⃣7️⃣ Credits & References
 - [GoogleCloudPlatform/microservices-demo](https://github.com/GoogleCloudPlatform/microservices-demo)
 - [ArgoCD](https://argo-cd.readthedocs.io/)
 - [Argo Rollouts](https://argoproj.github.io/argo-rollouts/)
@@ -307,11 +404,14 @@ kubectl get services -n gitops-demo | grep frontend
 ---
 
 ## 🎯 Workshop Success Criteria
-- ✅ ArgoCD installed and accessible
+- ✅ ArgoCD and Argo Rollouts installed and accessible
 - ✅ All microservices deployed via GitOps
 - ✅ Frontend application accessible externally
-- ✅ Deployment strategies demonstrated
+- ✅ **Interactive deployment strategies demonstrated with visual feedback**
+- ✅ **Advanced deployment strategies (canary, blue-green) working**
+- ✅ **Real-time monitoring and rollback capabilities**
 - ✅ Clean, production-ready GitOps structure
-- ✅ Troubleshooting guide provided
+- ✅ **Comprehensive troubleshooting guide provided**
+- ✅ **Elevated learning experience with lifetime value**
 
-**The GitOps scenario is complete and ready for workshop delivery! 🚀** 
+**The GitOps scenario is complete and provides an elevated, interactive learning experience! 🚀** 
