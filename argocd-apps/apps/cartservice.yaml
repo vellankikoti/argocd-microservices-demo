@@ -6,8 +6,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: '.'
-    targetRevision: HEAD
+    repoURL: 'https://github.com/vellankikoti/argocd-microservices-demo.git'
+    targetRevision: main
     path: services/cartservice
     directory:
       recurse: true
