@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: '.'
+    repoURL: 'https://github.com/vellankikoti/argocd-microservices-demo.git'
     targetRevision: HEAD
     path: argocd-apps/apps
   destination:
