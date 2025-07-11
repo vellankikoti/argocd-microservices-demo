@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: 'https://github.com/vellankikoti/argocd-microservices-demo.git'
     targetRevision: main
-    path: overlays/local/frontend
+    path: services/frontend
     directory:
       recurse: true
   destination:
