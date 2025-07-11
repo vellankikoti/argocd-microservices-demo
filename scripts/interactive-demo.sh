@@ -62,12 +62,16 @@ check_argo_rollouts() {
 start_dashboards() {
     print_step "Starting ArgoCD and Argo Rollouts dashboards..."
     
+    # Kill existing port-forward processes
+    pkill -f "kubectl port-forward" 2>/dev/null || true
+    sleep 2
+    
     # Start ArgoCD dashboard
     kubectl port-forward svc/argocd-server -n argocd 8080:443 &
     ARGOCD_PID=$!
     
-    # Start Argo Rollouts dashboard
-    kubectl port-forward deployment/argo-rollouts-dashboard -n argo-rollouts 3100:3100 &
+    # Start Argo Rollouts dashboard (it's in gitops-demo namespace)
+    kubectl port-forward deployment/argo-rollouts-dashboard -n gitops-demo 3100:3100 &
     ROLLOUTS_PID=$!
     
     sleep 3
@@ -92,6 +96,7 @@ demo_canary_deployment() {
     echo "Open Argo Rollouts UI: http://localhost:3100"
     echo "Watch the traffic gradually shift from 25% → 50% → 75% → 100%"
     
+    # Use kubectl rollout status instead of argo rollouts
     kubectl rollout status rollout/frontend -n gitops-demo --watch &
     ROLLOUT_WATCH_PID=$!
     
@@ -133,7 +138,8 @@ demo_blue_green_deployment() {
     kubectl get pods -n gitops-demo | grep recommendationservice
     
     print_warning "Promoting green to blue (this will switch traffic)..."
-    kubectl argo rollouts promote recommendationservice -n gitops-demo
+    # Use kubectl patch instead of argo rollouts promote
+    kubectl patch rollout recommendationservice -n gitops-demo --type='merge' -p='{"spec":{"paused":false}}'
     
     wait_for_user
     
